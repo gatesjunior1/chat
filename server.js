@@ -1,28 +1,25 @@
+const express = require('express');
+const http = require('http');
 const WebSocket = require('ws');
+const path = require('path');
 
-const wss = new WebSocket.Server({ port: 3000 }, () => {
-  console.log("🚀 Servidor WebSocket rodando na porta 3000");
-});
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-let clients = [];
+app.use(express.static(path.join(__dirname, 'public')));
 
 wss.on('connection', (ws) => {
-  clients.push(ws);
-  console.log("🔌 Novo usuário conectado.");
-
-  ws.on('message', (message) => {
-    console.log("📨 Mensagem recebida:", message);
-
-    // Enviar para todos os clientes conectados
-    clients.forEach(client => {
+  ws.on('message', (msg) => {
+    wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(message.toString());
+        client.send(msg.toString());
       }
     });
   });
+});
 
-  ws.on('close', () => {
-    console.log("❌ Usuário desconectado.");
-    clients = clients.filter(client => client !== ws);
-  });
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
